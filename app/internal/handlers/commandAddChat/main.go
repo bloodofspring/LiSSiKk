@@ -31,7 +31,7 @@ func GetSenderAndTargetUser(c tele.Context, args *handlers.Arg) (*handlers.Arg, 
 
 	err := db.Model(sender).WherePK().Select()
 	if err != nil {
-		return args, e.Error(err, "Failed to select sender user").WithSeverity(e.Critical).WithData(map[string]any{
+		return args, e.FromError(err, "Failed to select sender user").WithSeverity(e.Critical).WithData(map[string]any{
 			"sender": sender,
 		})
 	}
@@ -46,7 +46,9 @@ func InitNewChatForUser(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.E
 
 	if c.Chat().Type != tele.ChatSuperGroup {
 		c.Reply("Chat should be a supergroup")
-		return args, e.Nil()
+		return args, e.NewError("chat should be a supergroup", "Chat should be a supergroup").WithSeverity(e.Critical).WithData(map[string]any{
+			"sender": (*args)["sender"],
+		})
 	}
 	
 	var chat models.Chat
@@ -56,11 +58,14 @@ func InitNewChatForUser(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.E
 
 	if err == nil {
 		c.Reply("Chat already exists. Replace with new one? (TODO: Implement)")
-		return args, e.Nil()
+		return args, e.NewError("chat already exists", "Chat already exists").WithSeverity(e.Critical).WithData(map[string]any{
+			"sender": (*args)["sender"],
+			"chat": chat,
+		})
 	}
 	
 	if err != pg.ErrNoRows {
-		return args, e.Error(err, "Failed to select chat").WithSeverity(e.Critical).WithData(map[string]any{
+		return args, e.FromError(err, "Failed to select chat").WithSeverity(e.Critical).WithData(map[string]any{
 			"sender": (*args)["sender"],
 		})
 	}
@@ -71,7 +76,7 @@ func InitNewChatForUser(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.E
 	}
 	_, err = db.Model(&chat).Insert()
 	if err != nil {
-		return args, e.Error(err, "Failed to insert chat").WithSeverity(e.Critical).WithData(map[string]any{
+		return args, e.FromError(err, "Failed to insert chat").WithSeverity(e.Critical).WithData(map[string]any{
 			"chat": chat,
 		})
 	}

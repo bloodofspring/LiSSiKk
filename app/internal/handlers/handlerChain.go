@@ -39,7 +39,7 @@ func (hc *HandlerChain) Run(c tele.Context) error {
 		for _, handler := range hc.Handlers {
 			select {
 			case <-ctx.Done():
-				hc.ErrorInfo = e.Error(ctx.Err(), "Context cancelled")
+				hc.ErrorInfo = e.FromError(ctx.Err(), "Context cancelled")
 				done <- hc.ErrorInfo
 				return
 			default:
@@ -59,9 +59,12 @@ func (hc *HandlerChain) Run(c tele.Context) error {
 
 	select {
 	case err := <-done:
-		return err
+		if err.IsNil() || err.Severity == e.Ingnored {
+			return nil
+		}
+		return err.PushStack()
 	case <-ctx.Done():
-		hc.ErrorInfo = e.Error(ctx.Err(), "Context timeout")
+		hc.ErrorInfo = e.FromError(ctx.Err(), "Context timeout")
 		return hc.ErrorInfo
 	}
 }

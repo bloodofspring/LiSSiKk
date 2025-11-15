@@ -4,6 +4,7 @@ import (
 	"app/internal/client"
 	"app/internal/config"
 	"app/pkg/database"
+	"log"
 )
 
 func main() {
@@ -27,5 +28,6 @@ func main() {
 		err.Fatal()
 	}
 
+	log.Println("Bot started")
 	bot.Start()
 }

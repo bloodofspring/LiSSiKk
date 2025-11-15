@@ -14,7 +14,8 @@ services:
       - TELEGRAM_BOT_WEBHOOK_PORT=${TELEGRAM_BOT_WEBHOOK_PORT}
       - OWNER_TG_ID=${OWNER_TG_ID}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     ports:
       - "${TELEGRAM_BOT_WEBHOOK_PORT}:${TELEGRAM_BOT_WEBHOOK_PORT}"
 
@@ -30,3 +31,9 @@ services:
       - "${PUBLIC_POSTGRES_PORT}:5432"
     volumes:
       - /var/lib/postgresql/${PROJECT_NAME}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

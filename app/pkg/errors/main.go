@@ -2,6 +2,7 @@ package errors
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"runtime"
 )
@@ -30,7 +31,7 @@ type CodeLocation struct {
 	Function string `json:"function"`
 }
 
-func Error(err error, msg string) *ErrorInfo {
+func FromError(err error, msg string) *ErrorInfo {
 	return &ErrorInfo{
 		Message: msg,
 		Data: make(map[string]any),
@@ -39,6 +40,10 @@ func Error(err error, msg string) *ErrorInfo {
 		BirthLocation: getCodeLocation(),
 		Severity: DefaultSeverity,
 	}
+}
+
+func NewError(err string, msg string) *ErrorInfo {
+	return FromError(errors.New(err), msg)
 }
 
 func Nil() *ErrorInfo {
@@ -65,8 +70,9 @@ func getCodeLocation() *CodeLocation {
 	}
 }
 
-func (e *ErrorInfo) PushStack() {
+func (e *ErrorInfo) PushStack() *ErrorInfo {
 	e.Stack = append(e.Stack, *getCodeLocation())
+	return e
 }
 
 func (e *ErrorInfo) WithSeverity(severity int) *ErrorInfo {

@@ -26,10 +26,19 @@ func GetUserFromThreadID(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.
 
 	if c.Chat().Type != tele.ChatSuperGroup {
 		c.Reply("Chat should be a supergroup")
-		return args, e.Nil()
+		return args, e.NewError("chat should be a supergroup", "Chat should be a supergroup").WithSeverity(e.Critical).WithData(map[string]any{
+			"sender": (*args)["sender"],
+		})
 	}
 
 	threadId := c.Message().ThreadID
+
+	if threadId == 0 {
+		c.Reply("Thread not found")
+		return args, e.NewError("thread not found", "Thread not found").WithSeverity(e.Critical).WithData(map[string]any{
+			"chat_id": c.Chat().ID,
+		})
+	}
 
 	var thread models.Thread
 	err := db.Model(&thread).
@@ -37,8 +46,9 @@ func GetUserFromThreadID(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.
 		Where("chat_id = ?", c.Chat().ID).
 		Select()
 	if err != nil {
-		return args, e.Error(err, "Failed to select thread").WithSeverity(e.Critical).WithData(map[string]any{
+		return args, e.FromError(err, "Failed to select thread").WithSeverity(e.Critical).WithData(map[string]any{
 			"thread_id": threadId,
+			"chat_id": c.Chat().ID,
 		})
 	}
 
@@ -49,7 +59,7 @@ func GetUserFromThreadID(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.
 		Set("is_blocked = true").
 		Update()
 	if err != nil {
-		return args, e.Error(err, "Failed to update user").WithSeverity(e.Critical).WithData(map[string]any{
+		return args, e.FromError(err, "Failed to update user").WithSeverity(e.Critical).WithData(map[string]any{
 			"user": thread.AssociatedUserID,
 		})
 	}

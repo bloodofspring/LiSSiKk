@@ -9,5 +9,5 @@ type User struct {
 	IsBlocked bool `pg:"default:false"`
 
 	OwnedChats []*Chat `pg:"rel:has-many,fk:chat_owner_id"`
-	AssociatedThreads []*Thread `pg:"rel:has-many,fk:associated_user_id"`
+	AssociatedThreads []*Thread `pg:"rel:has-many,join_fk:associated_user_id"`
 }

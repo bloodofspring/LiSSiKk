@@ -21,7 +21,7 @@ func SetupWebhook(config *config.Config) (*tele.Bot, *e.ErrorInfo) {
 
 	client, err := tele.NewBot(pref)
 	if err != nil {
-		return nil, e.Error(err, "Failed to create bot").
+		return nil, e.FromError(err, "Failed to create bot").
 			WithSeverity(e.Critical).
 			WithData(map[string]any{
 				"token": config.TelegramClient.Token,

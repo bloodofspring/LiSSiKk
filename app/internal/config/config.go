@@ -32,7 +32,7 @@ func Load() (*Config, *e.ErrorInfo) {
 	if os.Getenv("DOCKER_TARGET") != "prod" {
 		err := godotenv.Load()
 		if err != nil {
-			return &Config{}, e.Error(err, "Env file is not present!").WithSeverity(e.Critical)
+			return &Config{}, e.FromError(err, "Env file is not present!").WithSeverity(e.Critical)
 		}
 	}
 
