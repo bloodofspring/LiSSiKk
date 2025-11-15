@@ -38,7 +38,7 @@ func LoadHandlers(bot *tele.Bot) *e.ErrorInfo {
 				return func(c tele.Context) error {
 					ownerID := viper.GetInt64("OWNER_TG_ID")
 					sender := c.Sender()
-					if sender != nil && sender.ID == ownerID {
+					if sender != nil && sender.ID == ownerID && c.Chat() != nil && c.Chat().Type == tele.ChatPrivate {
 						return nil
 					}
 					

@@ -25,9 +25,11 @@ func ConnectDatabase(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.Erro
 
 func GetSenderAndTargetUser(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.ErrorInfo) {
 	db := (*args)["db"].(*pg.DB)
+	fmt.Println(c.Sender())
 	user := &models.User{
-		TgID: c.Sender().ID,
+		TgID: c.Sender().ID, 
 	}
+	fmt.Println(user)
 
 	target := &models.User{
 		TgID: viper.GetInt64("OWNER_TG_ID"),
@@ -52,7 +54,7 @@ func GetSenderAndTargetUser(c tele.Context, args *handlers.Arg) (*handlers.Arg, 
 		})
 	}
 
-	_, err = db.Model(user).OnConflict("DO NOTHING").SelectOrInsert()
+	_, err = db.Model(user).WherePK().SelectOrInsert()
 	if err != nil {
 		return args, e.FromError(err, "Failed to insert user").WithSeverity(e.Critical)
 	}
@@ -66,12 +68,24 @@ func GetSenderAndTargetUser(c tele.Context, args *handlers.Arg) (*handlers.Arg, 
 func GetOrCrateThread(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.ErrorInfo) {
 	db := (*args)["db"].(*pg.DB)
 
+	fmt.Println((*args)["target"].(*models.User).TgID)
 	if (*args)["user"].(*models.User).IsOwner {
+		var thread models.Thread
+		err := db.Model(&thread).
+			Where("thread_id = ?", c.Message().ThreadID).
+			Where("chat_id = ?", c.Chat().ID).
+			Select()
+		if err != nil {
+			return args, e.FromError(err, "Failed to select thread").WithSeverity(e.Critical).WithData(map[string]any{
+				"user": (*args)["user"],
+			})
+		}
+		(*args)["thread"] = &thread
 		return args, e.Nil()
 	}
 
-	var Chat *models.Chat
-	err := db.Model(&Chat).
+	chat := &models.Chat{}
+	err := db.Model(chat).
 		Where("chat_owner_id = ?", (*args)["target"].(*models.User).TgID).
 		Select()
 	if err != nil {
@@ -80,17 +94,17 @@ func GetOrCrateThread(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.Err
 		})
 	}
 
-	(*args)["chat"] = Chat
+	(*args)["chat"] = chat
 
 	var thread models.Thread
 
 	err = db.Model(&thread).
-		Where("chat_id = ?", Chat.TgID).
+		Where("chat_id = ?", chat.TgID).
 		Where("associated_user_id = ?", (*args)["user"].(*models.User).TgID).
 		Select()
 
 	if err == nil {
-		(*args)["thread"] = thread
+		(*args)["thread"] = &thread
 		return args, e.Nil()
 	}
 
@@ -102,26 +116,27 @@ func GetOrCrateThread(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.Err
 	}
 
 	// TODO: Создать массив с IDшниками иконок и выбирать случайную
+	fmt.Println(1)
 	t, err := c.Bot().CreateTopic(
 		&tele.Chat{
-			ID: Chat.TgID,
+			ID: chat.TgID,
 		},
 		&tele.Topic{
 			Name: fmt.Sprintf("@%s", c.Sender().Username),
-			IconCustomEmojiID: "5199590728270886590",
+			// IconCustomEmojiID: "5199590728270886590",
 		},
 	)
 
 	if err != nil {
 		return args, e.FromError(err, "Failed to create topic").WithSeverity(e.Critical).WithData(map[string]any{
-			"chat": Chat,
+			"chat": chat,
 			"user": (*args)["user"],
 		})
 	}
 
 	thread = models.Thread{
 		ThreadID: t.ThreadID,
-		ChatID: Chat.TgID,
+		ChatID: chat.TgID,
 		AssociatedUserID: (*args)["user"].(*models.User).TgID,
 	}
 
@@ -129,12 +144,12 @@ func GetOrCrateThread(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.Err
 	if err != nil {
 		return args, e.FromError(err, "Failed to insert thread").WithSeverity(e.Critical).WithData(map[string]any{
 			"thread": thread,
-			"chat": Chat,
+			"chat": chat,
 			"user": (*args)["user"],
 		})
 	}
 
-	(*args)["thread"] = thread
+	(*args)["thread"] = &thread
 
 	return args, e.Nil()
 }

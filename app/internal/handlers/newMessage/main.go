@@ -3,11 +3,13 @@ package newmessage
 import (
 	"app/internal/handlers"
 	"app/internal/handlers/shared"
+	"fmt"
 	"time"
 
-	tele "gopkg.in/telebot.v4"
-	e "app/pkg/errors"
 	"app/pkg/database/models"
+	e "app/pkg/errors"
+
+	tele "gopkg.in/telebot.v4"
 )
 
 func NewMessageChain() *handlers.HandlerChain {
@@ -31,7 +33,20 @@ func ChackUserIsBlocked(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.E
 	return args, e.Nil()
 }
 
-func RedirectMessageToThread(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.ErrorInfo) {
+func RedirectFromThreadToUser(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.ErrorInfo) {
+	thread := (*args)["thread"].(*models.Thread)
+
+	chatRecipient := &tele.Chat{ID: thread.AssociatedUserID}
+
+	c.Bot().Copy(
+		chatRecipient,
+		c.Message(),
+	)
+
+	return args, e.Nil()
+}
+
+func RedirectFromUserToThread(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.ErrorInfo) {
 	thread := (*args)["thread"].(*models.Thread)
 
 	chatRecipient := &tele.Chat{ID: thread.ChatID, Type: tele.ChatSuperGroup}
@@ -43,4 +58,13 @@ func RedirectMessageToThread(c tele.Context, args *handlers.Arg) (*handlers.Arg,
 	)
 
 	return args, e.Nil()
+}
+
+func RedirectMessageToThread(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e.ErrorInfo) {
+	if (*args)["user"].(*models.User).IsOwner {
+		fmt.Println("Redirecting from thread to user")
+		return RedirectFromThreadToUser(c, args)
+	}
+
+	return RedirectFromUserToThread(c, args)
 }

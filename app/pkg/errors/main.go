@@ -17,28 +17,28 @@ const (
 const DefaultSeverity = Notice
 
 type ErrorInfo struct {
-	Message string `json:"message"`
-	Data map[string]any `json:"data"`
-	Err error `json:"err"`
-	Stack []CodeLocation `json:"stack"`
-	BirthLocation  *CodeLocation `json:"birth_location"`
-	Severity int `json:"severity"`
+	Message       string         `json:"message"`
+	Data          map[string]any `json:"data"`
+	Err           error          `json:"err"`
+	Stack         []CodeLocation `json:"stack"`
+	BirthLocation *CodeLocation  `json:"birth_location"`
+	Severity      int            `json:"severity"`
 }
 
 type CodeLocation struct {
-	File string `json:"file"`
-	Line int `json:"line"`
+	File     string `json:"file"`
+	Line     int    `json:"line"`
 	Function string `json:"function"`
 }
 
 func FromError(err error, msg string) *ErrorInfo {
 	return &ErrorInfo{
-		Message: msg,
-		Data: make(map[string]any),
-		Err: err,
-		Stack: make([]CodeLocation, 0),
+		Message:       msg,
+		Data:          make(map[string]any),
+		Err:           err,
+		Stack:         make([]CodeLocation, 0),
 		BirthLocation: getCodeLocation(),
-		Severity: DefaultSeverity,
+		Severity:      DefaultSeverity,
 	}
 }
 
@@ -48,12 +48,12 @@ func NewError(err string, msg string) *ErrorInfo {
 
 func Nil() *ErrorInfo {
 	return &ErrorInfo{
-		Message: "nil",
-		Data: make(map[string]any),
-		Err: nil,
-		Stack: make([]CodeLocation, 0),
+		Message:       "nil",
+		Data:          make(map[string]any),
+		Err:           nil,
+		Stack:         make([]CodeLocation, 0),
 		BirthLocation: getCodeLocation(),
-		Severity: Ingnored,
+		Severity:      Ingnored,
 	}
 }
 
@@ -64,8 +64,8 @@ func getCodeLocation() *CodeLocation {
 		line = 0
 	}
 	return &CodeLocation{
-		File: file,
-		Line: line,
+		File:     file,
+		Line:     line,
 		Function: runtime.FuncForPC(pc).Name(),
 	}
 }
@@ -95,6 +95,22 @@ func (e *ErrorInfo) Unwrap() error {
 
 func (e *ErrorInfo) Error() string {
 	return e.JSON()
+}
+
+// MarshalJSON кастомная сериализация для ErrorInfo
+func (e *ErrorInfo) MarshalJSON() ([]byte, error) {
+	type Alias ErrorInfo
+	var errMsg string
+	if e.Err != nil {
+		errMsg = e.Err.Error()
+	}
+	return json.Marshal(&struct {
+		*Alias
+		Err string `json:"err"`
+	}{
+		Alias: (*Alias)(e),
+		Err:   errMsg,
+	})
 }
 
 func (e *ErrorInfo) JSON() string {
