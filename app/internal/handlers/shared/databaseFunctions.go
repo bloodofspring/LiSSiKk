@@ -71,7 +71,7 @@ func getThread(threadID int, chatID int64, associatedUserID int64, db *pg.DB) (*
 			Where("associated_user_id = ?", associatedUserID).
 			Select()
 	} else {
-		return nil, e.NewError("either chatID or associatedUserID must be set", "Missing parameter").WithSeverity(e.Notice)
+		return nil, e.NewError("either threadID or associatedUserID must be set", "Missing parameter").WithSeverity(e.Notice)
 	}
 
 	if err != nil {
@@ -141,6 +141,10 @@ func getOrCrateThreadFunc(c tele.Context, args *handlers.Arg) (*handlers.Arg, *e
 	db := database.GetDB()
 
 	if (*args)["sender_is_owner"].(bool) {
+		if c.Message().Chat.Type != tele.ChatSuperGroup {
+			return args, e.Nil()
+		}
+
 		thread, errInfo := getThread(c.Message().ThreadID, c.Chat().ID, 0, db)
 		
 		if errInfo.IsNotNil() {

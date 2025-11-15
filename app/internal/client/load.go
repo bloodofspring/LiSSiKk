@@ -11,6 +11,18 @@ import (
 	tele "gopkg.in/telebot.v4"
 )
 
+func OnlyOwnerMiddleware(next tele.HandlerFunc) tele.HandlerFunc {
+	return func(c tele.Context) error {
+		ownerID := viper.GetInt64("OWNER_TG_ID")
+		sender := c.Sender()
+		if sender != nil && sender.ID != ownerID {
+			return c.Reply("You are not the owner of the bot")
+		}
+		
+		return next(c)
+	}
+}
+
 func LoadHandlers(bot *tele.Bot) *e.ErrorInfo {
 	startChain := commandstart.CommandStartChain()
 	addChatChain := commandaddchat.CommandAddChatChain()
@@ -18,8 +30,8 @@ func LoadHandlers(bot *tele.Bot) *e.ErrorInfo {
 	newMessageChain := newmessage.NewMessageChain()
 
 	bot.Handle("/start", startChain.Run)
-	bot.Handle("/initchat", addChatChain.Run)
-	bot.Handle("/block", blockChain.Run)
+	bot.Handle("/initchat", addChatChain.Run, OnlyOwnerMiddleware)
+	bot.Handle("/block", blockChain.Run, OnlyOwnerMiddleware)
 	for _, event := range []string{
 		tele.OnText,
 		tele.OnPhoto,
