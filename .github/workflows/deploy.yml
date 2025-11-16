@@ -41,6 +41,7 @@ jobs:
           PROJECT_NAME: ${{ vars.PROJECT_NAME }}
           TELEGRAM_BOT_WEBHOOK_PORT: ${{ vars.TELEGRAM_BOT_WEBHOOK_PORT }}
           PUBLIC_POSTGRES_PORT: ${{ vars.PUBLIC_POSTGRES_PORT }}
+          DOCKER_TARGET: ${{ vars.DOCKER_TARGET }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -57,6 +58,7 @@ jobs:
             PROJECT_NAME,
             TELEGRAM_BOT_WEBHOOK_PORT,
             PUBLIC_POSTGRES_PORT,
+            DOCKER_TARGET,
           script: |
             cd /var/www/${{ vars.PROJECT_NAME }}
             git pull

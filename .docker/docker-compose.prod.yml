@@ -13,6 +13,7 @@ services:
       - TELEGRAM_BOT_PUBLIC_URL=https://bloodofspring.com/bot${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_BOT_WEBHOOK_PORT=${TELEGRAM_BOT_WEBHOOK_PORT}
       - OWNER_TG_ID=${OWNER_TG_ID}
+      - DOCKER_TARGET=${DOCKER_TARGET}
     depends_on:
       db:
         condition: service_healthy
