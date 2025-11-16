@@ -42,6 +42,13 @@ func LoadHandlers(bot *tele.Bot) *e.ErrorInfo {
 		tele.OnVideoNote,
 		tele.OnSticker,
 		tele.OnAnimation,
+		tele.OnLocation,
+		tele.OnContact,
+		tele.OnVenue,
+		tele.OnPoll,
+		tele.OnDice,
+		tele.OnGame,
+		tele.OnInvoice,
 	} {
 		bot.Handle(
 			event,
